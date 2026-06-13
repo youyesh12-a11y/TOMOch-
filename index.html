@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>簡易タイムライン</title>
+  <style>
+    #timeline div { border-bottom: 1px solid #ccc; padding: 4px; }
+    .name { font-weight: bold; margin-right: 8px; }
+    .del { color: red; cursor: pointer; margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <h1>自作GAMEの問題点</h1>
+  <input id="username" placeholder="名前">
+  <input id="text" placeholder="投稿内容">
+  <button onclick="post()">投稿</button>
+  <div id="timeline"></div>
+
+ <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyChncaf2cbIIhHvQ8GiGJDM-fiS_4Ke_qc",
+    authDomain: "problems-of-the-original-game.firebaseapp.com",
+    projectId: "problems-of-the-original-game",
+    storageBucket: "problems-of-the-original-game.appspot.com",
+    messagingSenderId: "355490660887",
+    appId: "1:355490660887:web:c8ed084442a69b21eb9252",
+    measurementId: "G-6FH8M7YB25"
+  }
+
+  const app = initializeApp(firebaseConfig)
+  const db = getFirestore(app)
+
+  // 🔥 NGワードリスト（好きに追加してOK）
+  const ngWords = [
+    "死ね",
+    "ばか",
+    "くそ",
+    "アホ",
+    "ねえよ",
+    "殺す",
+    "しね",
+    "死ねよ",
+    "死ねばいいのに",
+    "死ね死ね団",
+    "ちんこ",
+    "まんこ",
+    "ふざけんな",
+    "ぶっ殺す",
+    "死ね死ね死ね",
+    "死ね死ね死ね死ね",
+    "死ね死ね死ね死ね死ね",
+    "でぶ",
+    "ぶさいく",
+    "でぶす",
+    "ぶす",
+    "ち〇こ",
+    "ま〇こ",
+    "〇〇こ",
+    "〇んこ",
+    "死ね死ね死ね死ね死ね死ね",
+    "うんこ",
+    "くそったれ",
+  ]
+
+  // 投稿
+  async function post() {
+    const text = document.getElementById("text").value
+    const username = document.getElementById("username").value || "名無し"
+    if (!text) return
+
+    // 🔥 NGワードチェック
+    if (ngWords.some(w => text.includes(w))) {
+      alert("NGワードが含まれています。投稿できません。")
+      return
+    }
+
+    // Firestore に投稿
+    await addDoc(collection(db, "posts"), {
+      text,
+      username,
+      created_at: Date.now()
+    })
+
+    document.getElementById("text").value = ""
+    load()
+  }
+
+  // 読み込み
+  async function load() {
+    document.getElementById("timeline").innerHTML = ""
+    const snapshot = await getDocs(collection(db, "posts"))
+    snapshot.forEach(docSnap => {
+      const post = docSnap.data()
+      const div = document.createElement("div")
+      div.innerHTML = `
+        <span class="name">@${post.username}</span>
+        ${post.text}
+        <span class="del" onclick="del('${docSnap.id}')">削除</span>
+      `
+      document.getElementById("timeline").prepend(div)
+    })
+  }
+
+  // 削除
+  async function del(id) {
+    await deleteDoc(doc(db, "posts", id))
+    load()
+  }
+
+  window.post = post
+  window.del = del
+  load()
+</script>
+
+</body>
+</html>
